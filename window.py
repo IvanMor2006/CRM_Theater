@@ -76,12 +76,16 @@ class Window:
             )
 
     def __insert_callback(self, table, fields, values):
-        db.insert(table, fields, values)
-        Window.grids[table].update()
+        id = db.insert(table, fields, values)
+        grid = Window.grids[table]
+        grid.update()
+        grid.select_row_by_id(id)
 
     def __update_callback(self, table, fields, values, id):
         db.update(table, fields, values, id)
-        Window.grids[table].update()
+        grid = Window.grids[table]
+        grid.update()
+        grid.select_row_by_id(id)
 
 def __main__():
     window = Window('Театр')

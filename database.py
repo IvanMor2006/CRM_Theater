@@ -14,15 +14,15 @@ class Database:
         self.cursor = conn.cursor()
 
     def insert(self, table, fields, values):
-        single = False
-        if len(values) == 1:
-            single = True
+        single = True if len(values) == 1 else False
         values = str(values).replace("'NULL'", "NULL")
         if single:
             values = values[:-2] + values[-1:]
         query = f'INSERT INTO {table}({", ".join(fields)}) VALUES {values}'
         self.cursor.execute(query)
         self.cursor.commit()
+        self.cursor.execute('SELECT SCOPE_IDENTITY()')
+        return self.cursor.fetchone()[0]
 
     def update(self, table, fields, values, id):
         sets = []
