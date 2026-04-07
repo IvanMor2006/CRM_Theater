@@ -34,11 +34,10 @@ class TopLevel:
                 element = Grid(frame, config.TABLES[n]['query'], False)
                 element.frame.pack(expand=True, fill='x')
                 if value:
-                    for item in element.element.get_children():
-                        buf_id = int(element.element.item(item, 'values')[0])
-                        if buf_id == value:
-                            break
-                    element.element.selection_set(item)
+                    element.select_row_by_id(value)
+                # if not focused:
+                #     focused = True
+                #     element.element.focus_set()
             else:
                 element = tk.Entry(frame)
                 element.pack(expand=True, fill='x', side='right')
@@ -47,6 +46,7 @@ class TopLevel:
                 if not focused:
                     focused = True
                     element.focus()
+                element.bind('<Return>', lambda event: self.get_data())
             self.elements[n] = element, t
 
         button = tk.Button(self.window, text=title, command=self.get_data)
