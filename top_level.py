@@ -35,14 +35,12 @@ class TopLevel:
                 element.frame.pack(expand=True, fill='x')
                 if value:
                     element.select_row_by_id(value)
-                # if not focused:
-                #     focused = True
-                #     element.element.focus_set()
             else:
                 element = tk.Entry(frame)
                 element.pack(expand=True, fill='x', side='right')
                 label.pack(side='right')
-                element.insert(0, value)
+                if value:
+                    element.insert(0, value)
                 if not focused:
                     focused = True
                     element.focus()
