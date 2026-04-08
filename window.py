@@ -5,6 +5,7 @@ from datetime import date, datetime
 
 from tab import Tab
 from top_level import TopLevel
+from menu import Menu
 import config
 from database import db
 from grid import Grid
@@ -19,6 +20,8 @@ class Window:
 
         self.button_frame = None
         self.notebook = None
+
+        self.menu = Menu(self)
 
     def start(self):
         self.window.mainloop()

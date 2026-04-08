@@ -253,3 +253,37 @@ INSERT INTO Билет(Ряд, Место, Цена, ДатаПродажи, IDПредставления)
          (2, 3, 8.00, '20250610', 2),
          (NULL, 44, 10.00, '20220220', 3),
          (NULL, 12, 10.00, '20220202', 5)
+GO
+
+DROP TABLE БилетLog
+GO
+
+CREATE TABLE БилетLog(
+  ID INT IDENTITY PRIMARY KEY,
+  typelog CHAR,
+  datelog DATETIME,
+  userlog VARCHAR(100),
+  hostlog VARCHAR(100),
+
+  IDБилета INT,
+  Ряд INT,
+  Место INT,
+  Цена MONEY,
+  ДатаПродажи DATETIME,
+  IDПредставления INT
+)
+GO
+
+CREATE TRIGGER trgБилетI ON Билет
+  AFTER INSERT, UPDATE, DELETE
+AS
+DECLARE @datelog DATETIME = GETDATE()
+INSERT INTO БилетLog
+  SELECT 'D', @datelog, SYSTEM_USER, HOST_NAME(),
+         NULL, Ряд, Место, Цена, ДатаПродажи, IDПредставления
+    FROM deleted
+INSERT INTO БилетLog
+  SELECT 'I', @datelog, SYSTEM_USER, HOST_NAME(),
+         ID, Ряд, Место, Цена, ДатаПродажи, IDПредставления
+    FROM inserted
+GO
