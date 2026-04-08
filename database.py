@@ -35,14 +35,14 @@ class Database:
         self.cursor.commit()
 
     def delete(self, table, id):
-        query = f'DELETE FROM {table} WHERE ID IN ({", ".join(id)})'
+        query = f'DELETE FROM {table} WHERE ID IN ({id if isinstance(id, int) else ", ".join(id)})'
         self.cursor.execute(query)
         self.cursor.commit()
         return id
 
     def select(self, text):
         self.cursor.execute(text)
-        fields: tuple[str, type]
+        fields: list[tuple[str, type]]
         fields = [(col[0], col[1]) for col in self.cursor.description]
         data = self.cursor.fetchall()
         return fields, data
