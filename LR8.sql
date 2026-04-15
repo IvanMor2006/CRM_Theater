@@ -265,7 +265,7 @@ CREATE TABLE БилетLog(
   userlog VARCHAR(100),
   hostlog VARCHAR(100),
 
-  IDБилета INT NOT NULL,
+  IDБилета INT,
   Ряд INT,
   Место INT,
   Цена MONEY,
