@@ -48,3 +48,16 @@ class Database:
         return fields, data
 
 db = Database()
+
+def __main__():
+    with open('LR8.sql', 'r') as f:
+        sql_script = f.read()
+    for block in sql_script.split('GO'):
+        try:
+            db.cursor.execute(block)
+            db.cursor.commit()
+        except Exception as e:
+            print(f'Ошибка: {e}')
+
+if __name__ == '__main__':
+    __main__()
