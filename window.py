@@ -11,8 +11,6 @@ from database import db
 from grid import Grid
 
 class Window:
-    grids: list[Grid]
-    grids = {}
     def __init__(self, title, width=900, height=600):
         self.window = tk.Tk()
         self.window.title(title)
@@ -22,6 +20,8 @@ class Window:
         self.notebook = None
 
         self.menu = Menu(self)
+
+        self.grids: dict[str, Grid] = {}
 
     def start(self):
         self.window.mainloop()
@@ -46,24 +46,24 @@ class Window:
         table = self.notebook.tab('current', 'text')
         if action == 'delete':
             id:tuple
-            id = Window.grids[table].get_selected_rows()
+            id = self.grids[table].get_selected_rows()
             if len(id) == 0:
                 messagebox.showinfo('Предупреждение', 'Не выбраны записи для удаления', icon='warning')
                 return
             try:
                 db.delete(table, id)
-            except:
+            except Exception as e:
                 messagebox.showinfo('Ошибка', 'Нельзя удалить запись: она используется в других таблицах!', icon='error')
                 return
-            Window.grids[table].update()
+            self.grids[table].update()
         elif action == 'add' or action == 'change':
             if action == 'change':
-                id = Window.grids[table].get_selected_rows()
+                id = self.grids[table].get_selected_rows()
                 if len(id) != 1:
                     messagebox.showinfo('Предупреждение', 'Не выбрана запись для изменения' if len(id) == 0 else 'Выберите одну запись', icon='warning')
                     return
                 _, rows = db.select(f'SELECT * FROM {table} WHERE ID = {id[0]}')
-            fields = Window.grids[table].FIELDS
+            fields = self.grids[table].FIELDS
             new_fields = []
             for i in range(1, len(fields)):
                 n, t = fields[i]
@@ -80,13 +80,13 @@ class Window:
 
     def __insert_callback(self, table, fields, values):
         id = db.insert(table, fields, values)
-        grid = Window.grids[table]
+        grid = self.grids[table]
         grid.update()
         grid.select_row_by_id(id)
 
     def __update_callback(self, table, fields, values, id):
         db.update(table, fields, values, id)
-        grid = Window.grids[table]
+        grid = self.grids[table]
         grid.update()
         grid.select_row_by_id(id)
 
@@ -100,7 +100,7 @@ def __main__():
         if title == 'Режиссёр':
             continue
         tab = window.new_tab(title)
-        Window.grids[title] = tab.new_grid(info['query'])
+        window.grids[title] = tab.new_grid(info['query'])
     window.start()
 
 if __name__ == '__main__':
