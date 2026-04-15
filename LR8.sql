@@ -70,14 +70,14 @@ CREATE TABLE Сотрудник (
   Фамилия VARCHAR(40) NOT NULL,
   Имя VARCHAR(40) NOT NULL,
   IDДолжности INT NOT NULL,
-  Пол VARCHAR(40) NOT NULL,
+  Пол VARCHAR(40) NOT NULL DEFAULT 'Мужской',
   ДатаРождения DATE NOT NULL
 )
 GO
 CREATE TABLE Зал (
   ID INT IDENTITY PRIMARY KEY,
   Название VARCHAR(40) NOT NULL,
-  Вместимость INT NOT NULL
+  Вместимость INT NOT NULL DEFAULT 250
 )
 GO
 CREATE TABLE Спектакль (
@@ -116,7 +116,7 @@ CREATE TABLE Билет (
   Ряд INT,
   Место INT NOT NULL,
   Цена MONEY NOT NULL DEFAULT 15.00,
-  ДатаПродажи DATETIME NOT NULL,
+  ДатаПродажи DATETIME NOT NULL DEFAULT GETDATE(),
   IDПредставления INT NOT NULL
 )
 GO
@@ -260,12 +260,12 @@ GO
 
 CREATE TABLE БилетLog(
   ID INT IDENTITY PRIMARY KEY,
-  typelog CHAR,
-  datelog DATETIME,
+  typelog CHAR NOT NULL,
+  datelog DATETIME NOT NULL,
   userlog VARCHAR(100),
   hostlog VARCHAR(100),
 
-  IDБилета INT,
+  IDБилета INT NOT NULL,
   Ряд INT,
   Место INT,
   Цена MONEY,
@@ -286,4 +286,72 @@ INSERT INTO БилетLog
   SELECT 'I', @datelog, SYSTEM_USER, HOST_NAME(),
          ID, Ряд, Место, Цена, ДатаПродажи, IDПредставления
     FROM inserted
+GO
+
+DROP VIEW Билеты
+GO
+CREATE VIEW Билеты
+AS
+SELECT Б.ID, Б.Ряд, Б.Место, Б.Цена, Б.ДатаПродажи, CONCAT(FORMAT(П.Дата, 'yyyy-MM-dd HH:mm:ss'), ' - ', С.Название, ' - ', З.Название) Представление
+  FROM Билет Б
+       INNER JOIN Представление П ON Б.IDПредставления = П.ID
+       INNER JOIN Спектакль С ON П.IDСпектакля = С.ID
+       INNER JOIN Зал З ON П.IDЗала = З.ID
+GO
+
+DROP VIEW Представления
+GO
+CREATE VIEW Представления
+AS
+SELECT П.ID, С.Название Спектакль, З.Название Зал, П.Дата
+  FROM Представление П
+       INNER JOIN Спектакль С ON П.IDСпектакля = С.ID
+       INNER JOIN Зал З ON П.IDЗала = З.ID
+GO
+
+DROP VIEW Спектакли
+GO
+CREATE VIEW Спектакли
+AS
+SELECT Сп.ID, Сп.Название, С.Фамилия Режиссёр, Сп.ДатаПремьеры, П.Название Пьеса
+  FROM Спектакль Сп
+       INNER JOIN Сотрудник С ON Сп.IDРежиссёра = С.ID
+       LEFT JOIN Пьеса П ON Сп.IDПьесы = П.ID
+GO
+
+DROP VIEW Роли
+GO
+CREATE VIEW Роли
+AS
+SELECT Р.ID, Р.Название, С.Название Спектакль
+  FROM Роль Р
+       INNER JOIN Спектакль С ON Р.IDСпектакля = С.ID
+GO
+
+DROP VIEW Исполнители
+GO
+CREATE VIEW Исполнители
+AS
+SELECT И.ID, Р.Название Роль, С.Фамилия + ' ' + С.Имя Сотрудник, И.ДатаНазначения, И.ДатаСнятия
+  FROM Исполнитель И
+       INNER JOIN Роль Р ON И.IDРоли = Р.ID
+       INNER JOIN Сотрудник С ON И.IDСотрудника = С.ID
+GO
+
+DROP VIEW Сотрудники
+GO
+CREATE VIEW Сотрудники
+AS
+SELECT С.ID, С.Фамилия, С.Имя, Д.Название Должность, С.Пол, С.ДатаРождения
+  FROM Сотрудник С
+       INNER JOIN Должность Д ON С.IDДолжности = Д.ID
+GO
+
+DROP VIEW Пьесы
+GO
+CREATE VIEW Пьесы
+AS
+SELECT П.ID, П.Название, П.Автор, Ж.Название Жанр
+  FROM Пьеса П
+       INNER JOIN Жанр Ж ON П.IDЖанра = Ж.ID
 GO

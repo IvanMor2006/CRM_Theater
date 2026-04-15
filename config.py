@@ -1,44 +1,35 @@
+from datetime import datetime
+
 TABLES = {
     'Билет': {
         'IDTable': 'IDБилета',
         'size': '700x460',
         'query': '''
-            SELECT Б.ID, Б.Ряд, Б.Место, Б.Цена, Б.ДатаПродажи, CONCAT(С.Название, ' - ', З.Название, ' (', FORMAT(П.Дата, 'yyyy-MM-dd HH:mm:ss'), ')') Представление
-              FROM Билет Б
-                   INNER JOIN Представление П ON Б.IDПредставления = П.ID
-                   INNER JOIN Спектакль С ON П.IDСпектакля = С.ID
-                   INNER JOIN Зал З ON П.IDЗала = З.ID
-              ORDER BY П.Дата DESC, С.Название, З.Название, Б.Ряд, Б.Место
+            SELECT * FROM Билеты
+              ORDER BY Представление DESC, Ряд, Место
         '''
     },
     'Представление': {
         'IDTable': 'IDПредставления',
         'size': '700x670',
         'query': '''
-            SELECT П.ID, С.Название Спектакль, З.Название Зал, П.Дата
-              FROM Представление П
-                   INNER JOIN Спектакль С ON П.IDСпектакля = С.ID
-                   INNER JOIN Зал З ON П.IDЗала = З.ID
-              ORDER BY П.Дата DESC, З.Название
+            SELECT * FROM Представления
+              ORDER BY Дата DESC, Зал
         '''
     },
     'Спектакль': {
         'IDTable': 'IDСпектакля',
         'size': '700x700',
         'query': '''
-            SELECT Сп.ID, Сп.Название, С.Фамилия Режиссёр, Сп.ДатаПремьеры, П.Название Пьеса
-              FROM Спектакль Сп
-                   INNER JOIN Сотрудник С ON Сп.IDРежиссёра = С.ID
-                   LEFT JOIN Пьеса П ON Сп.IDПьесы = П.ID
-              ORDER BY Сп.ДатаПремьеры DESC
+            SELECT * FROM Спектакли
+              ORDER BY ДатаПремьеры DESC
         '''
     },
     'Зал': {
         'IDTable': 'IDЗала',
         'size': '310x100',
         'query': '''
-            SELECT *
-              FROM Зал
+            SELECT * FROM Зал
               ORDER BY Вместимость
         '''
     },
@@ -46,49 +37,39 @@ TABLES = {
         'IDTable': 'IDроли',
         'size': '700x370',
         'query': '''
-            SELECT Р.ID, Р.Название, С.Название Спектакль
-              FROM Роль Р
-                   INNER JOIN Спектакль С ON Р.IDСпектакля = С.ID
-              ORDER BY С.Название, Р.Название
+            SELECT * FROM Роли
+              ORDER BY Спектакль, Название
         '''
     },
     'Исполнитель': {
         'IDTable': 'IDИсполнителя',
         'size': '700x700',
         'query': '''
-            SELECT И.ID, Р.Название Роль, С.Фамилия + ' ' + С.Имя Сотрудник, И.ДатаНазначения, И.ДатаСнятия
-              FROM Исполнитель И
-                   INNER JOIN Роль Р ON И.IDРоли = Р.ID
-                   INNER JOIN Сотрудник С ON И.IDСотрудника = С.ID
-              ORDER BY С.Фамилия, С.Имя, Р.Название, И.ДатаНазначения DESC
+            SELECT * FROM Исполнители
+              ORDER BY Сотрудник, Роль, ДатаНазначения DESC
         '''
     },
     'Сотрудник': {
         'IDTable': 'IDСотрудника',
         'size': '330x460',
         'query': '''
-            SELECT С.ID, С.Фамилия, С.Имя, Д.Название Должность, С.Пол, С.ДатаРождения
-              FROM Сотрудник С
-                   INNER JOIN Должность Д ON С.IDДолжности = Д.ID
-              ORDER BY Д.Название, С.Фамилия, С.Имя
+            SELECT * FROM Сотрудники
+              ORDER BY Должность, Фамилия, Имя
         '''
     },
     'Режиссёр': {
         'IDTable': 'IDРежиссёра',
         'query': '''
-            SELECT С.ID, С.Фамилия, С.Имя, Д.Название Должность, С.Пол, С.ДатаРождения
-              FROM Сотрудник С
-                   INNER JOIN Должность Д ON С.IDДолжности = Д.ID
-              WHERE Д.Название = 'Режиссёр'
-              ORDER BY Д.Название, С.Фамилия, С.Имя
+            SELECT * FROM Сотрудники
+              WHERE Должность = 'Режиссёр'
+              ORDER BY Должность, Фамилия, Имя
         '''
     },
     'Должность': {
         'IDTable': 'IDДолжности',
         'size': '300x70',
         'query': '''
-            SELECT *
-              FROM Должность
+            SELECT * FROM Должность
               ORDER BY Название
         '''
     },
@@ -96,18 +77,15 @@ TABLES = {
         'IDTable': 'IDПьесы',
         'size': '300x400',
         'query': '''
-            SELECT П.ID, П.Название, П.Автор, Ж.Название Жанр
-              FROM Пьеса П
-                   INNER JOIN Жанр Ж ON П.IDЖанра = Ж.ID
-              ORDER BY П.Автор, П.Название
+            SELECT * FROM Пьесы
+              ORDER BY Автор, Название
         '''
     },
     'Жанр': {
         'IDTable': 'IDЖанра',
         'size': '300x70',
         'query': '''
-            SELECT *
-              FROM Жанр
+            SELECT * FROM Жанр
               ORDER BY Название
         '''
     }
@@ -121,7 +99,12 @@ CONSTRAINTS = {
 }
 
 NULL_FIELDS = {'Ряд', 'Цена', 'ДатаСнятия', 'ДатаПремьеры', 'IDПьесы'}
-DEFAULT_PRICE = 15.00
+DEFUALT_FIELDS = {
+    'Цена': 15.00,
+    'Пол': 'Мужской',
+    'Вместимость': 250,
+    'ДатаПродажи': lambda: datetime.now().replace(microsecond=0)
+}
 
 def __main__():
     pass

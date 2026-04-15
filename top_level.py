@@ -41,6 +41,9 @@ class TopLevel:
                 label.pack(side='right')
                 if value:
                     element.insert(0, value)
+                elif n in config.DEFUALT_FIELDS:
+                    raw_data = config.DEFUALT_FIELDS[n]
+                    element.insert(0, raw_data() if callable(raw_data) else raw_data)
                 if not focused:
                     focused = True
                     element.focus()
@@ -59,10 +62,10 @@ class TopLevel:
                     element: tk.Entry
                     if not (data_str := element.get()):
                         if n in config.NULL_FIELDS:
-                            if n == 'Цена':
-                                data = config.DEFAULT_PRICE
-                            else:
-                                data = 'NULL'
+                            data = 'NULL'
+                        elif n in config.DEFUALT_FIELDS:
+                            row_data = config.DEFUALT_FIELDS[n]
+                            data = row_data() if callable(row_data) else row_data
                         else:
                             raise
                     else:
