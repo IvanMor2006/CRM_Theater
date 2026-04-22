@@ -9,6 +9,7 @@ from menu import Menu
 import config
 from database import db
 from grid import Grid
+from report import Report
 
 class Window:
     def __init__(self, title, width=900, height=600):
@@ -90,11 +91,22 @@ class Window:
         grid.update()
         grid.select_row_by_id(id)
 
+    def export_to_excel(self):
+        table = self.notebook.tab('current', 'text')
+        if table not in self.grids:
+            messagebox.showinfo('Предупреждение', 'Отсутствуют данные для экспорта!', icon='warning')
+            return
+        
+        grid = self.grids[table]
+        exporter = Report(self.window, grid, table)
+        exporter.export()
+
 def __main__():
     window = Window('Театр')
     window.new_button('Добавить', lambda: window.row('add')).pack(pady=10)
     window.new_button('Изменить', lambda: window.row('change')).pack(pady=10)
     window.new_button('Удалить', lambda: window.row('delete')).pack(pady=10)
+    window.new_button('Экспорт в Excel', lambda: window.export_to_excel()).pack(pady=10)
     
     for title, info in config.TABLES.items():
         if title == 'Режиссёр':
