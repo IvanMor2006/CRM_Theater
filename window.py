@@ -4,7 +4,7 @@ from typing import Literal
 from datetime import date, datetime
 
 from tab import Tab
-from top_level import TopLevel
+from iuform import IUForm
 from menu import Menu
 import config
 from database import db
@@ -49,19 +49,19 @@ class Window:
             id:tuple
             id = self.grids[table].get_selected_rows()
             if len(id) == 0:
-                messagebox.showinfo('Предупреждение', 'Не выбраны записи для удаления', icon='warning')
+                messagebox.showwarning('Предупреждение', 'Не выбраны записи для удаления')
                 return
             try:
                 db.delete(table, id)
             except Exception as e:
-                messagebox.showinfo('Ошибка', 'Нельзя удалить запись: она используется в других таблицах!', icon='error')
+                messagebox.showerror('Ошибка', 'Нельзя удалить запись: она используется в других таблицах!')
                 return
             self.grids[table].update()
         elif action == 'add' or action == 'change':
             if action == 'change':
                 id = self.grids[table].get_selected_rows()
                 if len(id) != 1:
-                    messagebox.showinfo('Предупреждение', 'Не выбрана запись для изменения' if len(id) == 0 else 'Выберите одну запись', icon='warning')
+                    messagebox.showwarning('Предупреждение', 'Не выбрана запись для изменения' if len(id) == 0 else 'Выберите одну запись')
                     return
                 _, rows = db.select(f'SELECT * FROM {table} WHERE ID = {id[0]}')
             fields = self.grids[table].FIELDS
@@ -71,7 +71,7 @@ class Window:
                 if n in config.TABLES:
                     t = Grid
                 new_fields.append((n, t))
-            TopLevel(
+            IUForm(
                 self.window,
                 f'Добавить {table}' if action == 'add' else f'Изменить {table}',
                 new_fields,
@@ -91,22 +91,11 @@ class Window:
         grid.update()
         grid.select_row_by_id(id)
 
-    def export_to_excel(self):
-        table = self.notebook.tab('current', 'text')
-        if table not in self.grids:
-            messagebox.showinfo('Предупреждение', 'Отсутствуют данные для экспорта!', icon='warning')
-            return
-        
-        grid = self.grids[table]
-        exporter = Report(self.window, grid, table)
-        exporter.export()
-
 def __main__():
     window = Window('Театр')
     window.new_button('Добавить', lambda: window.row('add')).pack(pady=10)
     window.new_button('Изменить', lambda: window.row('change')).pack(pady=10)
     window.new_button('Удалить', lambda: window.row('delete')).pack(pady=10)
-    window.new_button('Экспорт в Excel', lambda: window.export_to_excel()).pack(pady=10)
     
     for title, info in config.TABLES.items():
         if title == 'Режиссёр':

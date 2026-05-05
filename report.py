@@ -1,10 +1,12 @@
 from datetime import datetime, date
 from tkinter import filedialog, messagebox
-
+from types import SimpleNamespace
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
+from grid import Grid
+from database import db
 
 class Report:
     def __init__(self, parent, grid, title):
@@ -12,9 +14,12 @@ class Report:
         self.grid = grid
         self.title = title
 
-    def export(self):
+    def export(self, first_col=False):
+        if not isinstance(self.grid, Grid):
+            f, r = db.select(self.grid)
+            self.grid = SimpleNamespace(FIELDS = f, rows = r)
         if not self.grid.rows:
-            messagebox.showinfo('Предупреждение', 'Отсутствуют данные для экспорта!', icon='warning', parent=self.parent)
+            messagebox.showwarning('Предупреждение', 'Отсутствуют записи!', parent=self.parent)
             return False
         
         filename = filedialog.asksaveasfilename(
@@ -42,7 +47,7 @@ class Report:
                 bottom=Side(style='thin')
             )
             headers = [field[0] for field in self.grid.FIELDS]
-            for col, header in enumerate(headers, 1):
+            for col, header in enumerate(headers[0:] if first_col else headers[1:], 1):
                 cell = ws.cell(row=1, column=col, value=header)
                 cell.font = header_font
                 cell.fill = header_fill
@@ -50,7 +55,7 @@ class Report:
                 cell.border = border
 
             for row_i, row_data in enumerate(self.grid.rows, 2):
-                for col_i, value in enumerate(row_data, 1):
+                for col_i, value in enumerate(row_data[0:] if first_col else row_data[1:], 1):
                     cell = ws.cell(row=row_i, column=col_i, value=value)
                     cell.border = border
                     cell.alignment = Alignment(horizontal='left', vertical='center')
@@ -77,9 +82,9 @@ class Report:
             ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
             
             wb.save(filename)
-            messagebox.showinfo('Успех', f'Отчет успешно сохранен в файл:\n{filename}', icon='info', parent=self.parent)
+            messagebox.showinfo('Успех', f'Отчет успешно сохранен в файл:\n{filename}', parent=self.parent)
             return True
             
         except Exception as e:
-            messagebox.showerror('Ошибка', f'Ошибка при сохранении файла:\n{str(e)}', icon='error', parent=self.parent)
+            messagebox.showerror('Ошибка', f'Ошибка при сохранении файла:\n{str(e)}', parent=self.parent)
             return False

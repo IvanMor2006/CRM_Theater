@@ -5,18 +5,12 @@ from decimal import Decimal
 
 import config
 from grid import Grid
+from child_window import ChildWindow
 
-class TopLevel:
+class IUForm:
     def __init__(self, parent, title, fields, current_values, callback=None):
-        self.window = tk.Toplevel(parent)
-        self.window.title(title)
         size = config.TABLES[title.split()[1]]['size']
-        width, height = size.split('x')
-        self.window.geometry(size)
-        self.window.geometry(f'+{self.window.winfo_screenwidth() // 2 - int(width) // 2}+{self.window.winfo_screenheight() // 2 - int(height) // 2}')
-        
-        self.window.transient(parent)
-        self.window.grab_set()
+        self.window = ChildWindow(parent, title, size)
 
         self.callback = callback
         self.elements = {}
@@ -26,7 +20,7 @@ class TopLevel:
 
         focused = False
         for (n, t), value in zip(fields, current_values):
-            frame = tk.Frame(self.window)
+            frame = tk.Frame(self.window.element)
             frame.pack(fill='x', padx=50, pady=5)
             label = tk.Label(frame, text=n)
             if t == Grid:
@@ -50,7 +44,7 @@ class TopLevel:
                 element.bind('<Return>', lambda event: self.get_data())
             self.elements[n] = element, t
 
-        button = tk.Button(self.window, text=title, command=self.get_data)
+        button = tk.Button(self.window.element, text=title, command=self.get_data)
         button.pack()
 
     def get_data(self):
@@ -96,20 +90,20 @@ class TopLevel:
                     n = config.TABLES[n]['IDTable']
             except:
                 if isinstance(element, tk.Entry):
-                    messagebox.showinfo('Ошибка', f'Неверный тип данных в поле {n}', icon='error', parent=self.window)
+                    messagebox.showerror('Ошибка', f'Неверный тип данных в поле {n}', parent=self.window.element)
                     element.focus()
                 elif isinstance(element, Grid):
-                    messagebox.showinfo('Ошибка', f'Выберите строку в таблице {n}', icon='error', parent=self.window)
+                    messagebox.showerror('Ошибка', f'Выберите строку в таблице {n}', parent=self.window.element)
                 return None
             result[n] = data
         print(result)
         try:
             if self.callback:
                 self.callback(list(result.keys()), tuple(result.values()))
-            self.window.destroy()
+            self.window.element.destroy()
         except Exception as e:
             print(e)
             for error, message in config.CONSTRAINTS.items():
                 if error in str(e):
-                    messagebox.showinfo('Предупреждение', message, icon='warning')
+                    messagebox.showwarning('Предупреждение', message)
                     break

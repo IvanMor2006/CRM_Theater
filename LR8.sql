@@ -355,3 +355,76 @@ SELECT П.ID, П.Название, П.Автор, Ж.Название Жанр
   FROM Пьеса П
        INNER JOIN Жанр Ж ON П.IDЖанра = Ж.ID
 GO
+
+DROP FUNCTION dbo.ВыручкаПоIDПредставления
+GO
+CREATE FUNCTION dbo.ВыручкаПоIDПредставления(
+  @IDПредставления INT
+)
+RETURNS MONEY
+AS
+BEGIN
+  DECLARE @Выручка MONEY = 0
+  IF @IDПредставления IS NULL
+    SET @Выручка = (SELECT ISNULL(SUM(Цена), 0)
+                      FROM Билет)
+  ELSE
+    SET @Выручка = (SELECT ISNULL(SUM(Цена), 0)
+                      FROM Билет
+                      WHERE IDПредставления = @IDПредставления)
+  RETURN @Выручка
+END
+GO
+
+DROP FUNCTION dbo.ПредставленияВЗаданнуюДату
+GO
+CREATE FUNCTION dbo.ПредставленияВЗаданнуюДату(
+  @Год INT,
+  @Месяц INT,
+  @День INT
+)
+RETURNS TABLE
+AS
+RETURN (SELECT * FROM Представления
+          WHERE (@День IS NULL OR DAY(Дата) = @День)
+            AND (@Месяц IS NULL OR MONTH(Дата) = @Месяц)
+            AND (@Год IS NULL OR YEAR(Дата) = @Год))
+GO
+/*
+DROP FUNCTION dbo.ИсполнителиСпектакля
+GO
+CREATE FUNCTION dbo.ИсполнителиСпектакля(
+  @IDСпектакля INT
+)
+RETURNS @Исполнители TABLE (ID INT, Роль VARCHAR(100), Сотрудник VARCHAR(100), ДатаНазначения DATE, ДатаСнятия DATE)
+AS
+BEGIN
+  INSERT INTO @Исполнители
+  SELECT ИИ.ID, ИИ.Роль, ИИ.Сотрудник, ИИ.ДатаНазначения, ИИ.ДатаСнятия
+    FROM Исполнители ИИ
+         INNER JOIN Исполнитель И ON И.ID = ИИ.ID
+         INNER JOIN Роль Р ON Р.ID = И.IDРоли
+    WHERE @IDСпектакля IS NULL OR @IDСпектакля = Р.IDСпектакля
+  RETURN
+END
+GO*/
+
+DROP VIEW ВыручкаПоПредставлениям
+GO
+CREATE VIEW ВыручкаПоПредставлениям
+AS
+SELECT Спектакль, Зал, Дата, dbo.ВыручкаПоIDПредставления(ID) Выручка FROM Представления
+UNION ALL
+SELECT 'Все спектакли', 'Все залы', GETDATE(), dbo.ВыручкаПоIDПредставления(NULL)
+GO
+
+DROP VIEW ЗаполнениеЗалов
+GO
+CREATE VIEW ЗаполнениеЗалов
+AS
+SELECT З.Название, З.Вместимость, COUNT(Б.ID) КоличетсвоБилетов, CAST(COUNT(Б.ID) AS FLOAT) / З.Вместимость * 100 'Заполнение (%)'
+  FROM Зал З
+       LEFT JOIN Представление П ON П.IDЗала = З.ID
+       LEFT JOIN Билет Б ON Б.IDПредставления = П.ID
+  GROUP BY Название, Вместимость
+GO

@@ -54,8 +54,9 @@ def __main__():
         sql_script = f.read()
     for block in sql_script.split('GO'):
         try:
-            db.cursor.execute(block)
-            db.cursor.commit()
+            if block.strip():
+                db.cursor.execute(block)
+                db.cursor.commit()
         except Exception as e:
             print(f'Ошибка: {e}')
 
