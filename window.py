@@ -17,6 +17,8 @@ class Window:
         self.window.title(title)
         self.window.geometry(f'{width}x{height}+{self.window.winfo_screenwidth() // 2 - width // 2}+{self.window.winfo_screenheight() // 2 - height // 2}')
 
+        self.window.bind('<Escape>', lambda event: self.window.destroy())
+
         self.button_frame = None
         self.notebook = None
 

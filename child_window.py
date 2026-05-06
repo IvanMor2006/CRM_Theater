@@ -9,3 +9,4 @@ class ChildWindow:
         self.element.geometry(f'+{self.element.winfo_screenwidth() // 2 - int(width) // 2}+{self.element.winfo_screenheight() // 2 - int(height) // 2}')
         self.element.transient(parent)
         self.element.grab_set()
+        self.element.bind('<Escape>', lambda event: self.element.destroy())

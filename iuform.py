@@ -29,6 +29,7 @@ class IUForm:
                 element.frame.pack(expand=True, fill='x')
                 if value:
                     element.select_row_by_id(value)
+                element.element.bind('<Return>', lambda event: self.get_data())
             else:
                 element = tk.Entry(frame)
                 element.pack(expand=True, fill='x', side='right')
@@ -105,5 +106,5 @@ class IUForm:
             print(e)
             for error, message in config.CONSTRAINTS.items():
                 if error in str(e):
-                    messagebox.showwarning('Предупреждение', message)
+                    messagebox.showwarning('Предупреждение', message, parent=self.window.element)
                     break

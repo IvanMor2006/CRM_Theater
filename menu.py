@@ -31,6 +31,7 @@ class Menu:
 
         self.element.add_command(label='Log билетов', command=self.__log)
         self.element.add_command(label='Поиск', command=self.__search)
+        self.element.add_command(label='Фильтрация')
 
     def __report_table(self):
         table = self.parent.notebook.tab('current', 'text')
@@ -45,6 +46,7 @@ class Menu:
         tk.Label(report_window.element, text='Год').pack()
         year = ttk.Spinbox(report_window.element, from_=2000, to=datetime.now().year, wrap=True)
         year.pack(pady=5)
+        year.focus()
         months = {}
         for i, month in enumerate(['', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'], 0):
             months[month] = i
@@ -79,6 +81,7 @@ class Menu:
               ORDER BY datelog DESC, ID DESC
         '''
         log_window = ChildWindow(self.parent.window, 'Log Билетов')
+        log_window.element.focus()
         grid = Grid(log_window.element, query, False)
         grid.frame.pack(padx=10, pady=10, side='top', fill='both', expand=True)
 
@@ -90,6 +93,7 @@ class Menu:
         tk.Label(frame, text='Введите значения для поиска').pack()
         value = tk.StringVar()
         entry = tk.Entry(frame, width=40, textvariable=value)
+        entry.focus()
         entry.pack()
         frame.pack(pady=10)
 
@@ -113,11 +117,13 @@ class Menu:
 
                 search_window.grid.select_row_by_id(next(search_window.gen))
             except StopIteration:
-                messagebox.showinfo('Поиск' , 'Достигнут конец таблицы. Возвращение в начало')
+                messagebox.showinfo('Поиск' , 'Достигнут конец таблицы. Возвращение в начало', parent=search_window.element)
                 search_window.gen = s()
                 try:
                     search_window.grid.select_row_by_id(next(search_window.gen))
                 except:
                     pass
 
-        tk.Button(search_window.element, text='Поиск', command=get_next).pack()
+        button = tk.Button(search_window.element, text='Поиск', command=get_next)
+        button.pack()
+        entry.bind('<Return>', lambda event: button.invoke())
