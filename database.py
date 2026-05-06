@@ -12,6 +12,14 @@ class Database:
         )
         conn = pyodbc.connect(self.connection_string)
         self.cursor = conn.cursor()
+    
+    def query(self, text: str):
+        try:
+            if text.strip():
+                db.cursor.execute(text)
+                db.cursor.commit()
+        except Exception as e:
+            print(f'Ошибка: {e}')
 
     def insert(self, table, fields, values):
         single = True if len(values) == 1 else False
@@ -53,12 +61,7 @@ def __main__():
     with open('LR8.sql', 'r') as f:
         sql_script = f.read()
     for block in sql_script.split('GO'):
-        try:
-            if block.strip():
-                db.cursor.execute(block)
-                db.cursor.commit()
-        except Exception as e:
-            print(f'Ошибка: {e}')
+        db.query(block)
 
 if __name__ == '__main__':
     __main__()
