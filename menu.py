@@ -28,11 +28,9 @@ class Menu:
         self.element.add_cascade(label='Отчёты', menu=reports)
 
         self.element.add_command(label='Поиск', command=self.__search)
-        self.element.add_command(label='Фильтрация')
 
     def __report_table(self):
-        table = self.parent.notebook.tab('current', 'text')
-        grid = self.parent.grids[table]
+        table, grid = self.parent.get_current_grid()
         exporter = Report(self.parent.window, grid, table)
         exporter.export()
     def __report(self, query, filename):
@@ -81,8 +79,7 @@ class Menu:
         entry.pack()
         frame.pack(pady=10)
 
-        search_window.table = self.parent.notebook.tab('current', 'text')
-        search_window.grid = self.parent.grids[search_window.table]
+        search_window.table, search_window.grid = self.parent.get_current_grid()
         def s():
             for row in search_window.grid.rows:
                 for elem in row[1:]:
@@ -93,10 +90,10 @@ class Menu:
 
         def get_next():
             try:
-                new_table = self.parent.notebook.tab('current', 'text')
+                new_table, grid = self.parent.get_current_grid()
                 if new_table != search_window.table:
                     search_window.table = new_table
-                    search_window.grid = self.parent.grids[search_window.table]
+                    search_window.grid = grid
                     search_window.gen = s()
 
                 search_window.grid.select_row_by_id(next(search_window.gen))
