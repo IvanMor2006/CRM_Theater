@@ -19,13 +19,13 @@ class Menu:
         reports.add_command(label='Итоги цен билетов', command=lambda: self.__report(
             '''SELECT AVG(Цена) СредняяЦена, MIN(Цена) МинимальнаяЦена, MAX(Цена) МаксимальнаяЦена
                  FROM Билет''',
-            'ИтогиЦен'))
+            'Итоги цен'))
         reports.add_command(label='Выручка за представления', command=lambda: self.__report(
             'SELECT * FROM ВыручкаПоПредставлениям',
             'Выручка'))
         reports.add_command(label='Загрузка залов', command=lambda: self.__report(
             'SELECT * FROM ЗаполнениеЗалов',
-            'ЗагрузкаЗалов'))
+            'Загрузка залов'))
         reports.add_command(label='Представления в заданную дату', command=self.__report_performances)
         self.element.add_cascade(label='Отчёты', menu=reports)
 
@@ -48,28 +48,29 @@ class Menu:
         year = ttk.Spinbox(report_window.element, from_=2000, to=datetime.now().year, wrap=True)
         year.pack(pady=5)
         year.focus()
-        months = {}
-        for i, month in enumerate(['', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'], 0):
-            months[month] = i
+        months = ['', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
+        for i, month in enumerate(months, 0):
+            if i:
+                months[i] = str(i) + ' ' + month
         tk.Label(report_window.element, text='Месяц').pack()
-        month = ttk.Combobox(report_window.element, values=list(months.keys()), state='readonly')
+        month = ttk.Combobox(report_window.element, values=months, state='readonly')
         month.current(0)
         month.pack(pady=5)
         tk.Label(report_window.element, text='День').pack()
         day = ttk.Spinbox(report_window.element, from_=1, to=31, wrap=True)
         day.pack(pady=5)
         def report_date(year, month, day):
-            title = f'ПредставленияЗа{year}-{month if month else ""}-{day}'
+            title = f'Представления за{year}-{month[2:]}-{day}'
             if not year:
                 year = 'NULL'
-            if not month:
+            if not (month and (month := int(month[0]))):
                 month = 'NULL'
             if not day:
                 day = 'NULL'
             exporter = Report(report_window.element, f'SELECT * FROM ПредставленияВЗаданнуюДату({year}, {month}, {day})', title)
             if exporter.export():
                 report_window.element.destroy()
-        tk.Button(report_window.element, text='Сделать отчёт', command=lambda: report_date(year.get(), months[month.get()], day.get())).pack()
+        tk.Button(report_window.element, text='Сделать отчёт', command=lambda: report_date(year.get(), month.get(), day.get())).pack()
 
     def __log(self):
         query = '''
