@@ -15,8 +15,10 @@ class Grid:
         self.frame.pack(fill='y', side='left')
         self.frame.config(takefocus=False)
 
-        self.button = tk.Button(self.frame, text='Снять выделение', command=lambda: self.element.selection_set([]))
-        self.button.pack(side='bottom')
+        self.button_frame = tk.Frame(self.frame)
+        self.button_frame.pack(side='bottom', fill='x')
+        self.button = tk.Button(self.button_frame, text='Снять выделение', command=lambda: self.element.selection_set([]))
+        self.button.pack(side='left', expand=True)
 
         scrollbar_x = ttk.Scrollbar(self.frame, orient='horizontal')
         scrollbar_x.pack(side='bottom', fill='x')

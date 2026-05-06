@@ -255,39 +255,6 @@ INSERT INTO Билет(Ряд, Место, Цена, ДатаПродажи, IDПредставления)
          (NULL, 12, 10.00, '20220202', 5)
 GO
 
-DROP TABLE БилетLog
-GO
-
-CREATE TABLE БилетLog(
-  ID INT IDENTITY PRIMARY KEY,
-  typelog CHAR NOT NULL,
-  datelog DATETIME NOT NULL,
-  userlog VARCHAR(100),
-  hostlog VARCHAR(100),
-
-  IDБилета INT,
-  Ряд INT,
-  Место INT,
-  Цена MONEY,
-  ДатаПродажи DATETIME,
-  IDПредставления INT
-)
-GO
-
-CREATE TRIGGER trgБилетI ON Билет
-  AFTER INSERT, UPDATE, DELETE
-AS
-DECLARE @datelog DATETIME = GETDATE()
-INSERT INTO БилетLog
-  SELECT 'D', @datelog, SYSTEM_USER, HOST_NAME(),
-         NULL, Ряд, Место, Цена, ДатаПродажи, IDПредставления
-    FROM deleted
-INSERT INTO БилетLog
-  SELECT 'I', @datelog, SYSTEM_USER, HOST_NAME(),
-         ID, Ряд, Место, Цена, ДатаПродажи, IDПредставления
-    FROM inserted
-GO
-
 DROP VIEW Билеты
 GO
 CREATE VIEW Билеты
@@ -356,6 +323,46 @@ SELECT П.ID, П.Название, П.Автор, Ж.Название Жанр
        INNER JOIN Жанр Ж ON П.IDЖанра = Ж.ID
 GO
 
+DROP TABLE БилетLog
+GO
+CREATE TABLE БилетLog(
+  ID INT IDENTITY PRIMARY KEY,
+  typelog CHAR NOT NULL,
+  datelog DATETIME NOT NULL,
+  userlog VARCHAR(100),
+  hostlog VARCHAR(100),
+
+  IDБилета INT,
+  Ряд INT,
+  Место INT,
+  Цена MONEY,
+  ДатаПродажи DATETIME,
+  Представление VARCHAR(200)
+)
+GO
+
+CREATE TRIGGER trgБилетI ON Билет
+  AFTER INSERT, UPDATE, DELETE
+AS
+DECLARE @datelog DATETIME = GETDATE()
+INSERT INTO БилетLog(typelog, datelog, userlog, hostlog, IDБилета, Ряд, Место, Цена, ДатаПродажи, Представление)
+  SELECT 'D', @datelog, SYSTEM_USER, HOST_NAME(),
+         NULL, d.Ряд, d.Место, d.Цена, d.ДатаПродажи,
+         CONCAT(FORMAT(П.Дата, 'yyyy-MM-dd HH:mm:ss'), ' - ', С.Название, ' - ', З.Название)
+    FROM deleted d
+         LEFT JOIN Представление П ON d.IDПредставления = П.ID
+         LEFT JOIN Спектакль С ON П.IDСпектакля = С.ID
+         LEFT JOIN Зал З ON П.IDЗала = З.ID
+INSERT INTO БилетLog(typelog, datelog, userlog, hostlog, IDБилета, Ряд, Место, Цена, ДатаПродажи, Представление)
+  SELECT 'I', @datelog, SYSTEM_USER, HOST_NAME(),
+         i.ID, i.Ряд, i.Место, i.Цена, i.ДатаПродажи,
+         CONCAT(FORMAT(П.Дата, 'yyyy-MM-dd HH:mm:ss'), ' - ', С.Название, ' - ', З.Название)
+    FROM inserted i
+         LEFT JOIN Представление П ON i.IDПредставления = П.ID
+         LEFT JOIN Спектакль С ON П.IDСпектакля = С.ID
+         LEFT JOIN Зал З ON П.IDЗала = З.ID
+GO
+
 DROP FUNCTION dbo.ВыручкаПоIDПредставления
 GO
 CREATE FUNCTION dbo.ВыручкаПоIDПредставления(
@@ -390,7 +397,7 @@ RETURN (SELECT * FROM Представления
             AND (@Месяц IS NULL OR MONTH(Дата) = @Месяц)
             AND (@Год IS NULL OR YEAR(Дата) = @Год))
 GO
-/*
+
 DROP FUNCTION dbo.ИсполнителиСпектакля
 GO
 CREATE FUNCTION dbo.ИсполнителиСпектакля(
@@ -407,7 +414,7 @@ BEGIN
     WHERE @IDСпектакля IS NULL OR @IDСпектакля = Р.IDСпектакля
   RETURN
 END
-GO*/
+GO
 
 DROP VIEW ВыручкаПоПредставлениям
 GO
@@ -427,4 +434,15 @@ SELECT З.Название, З.Вместимость, COUNT(Б.ID) КоличетсвоБилетов, CAST(COUNT(Б.ID
        LEFT JOIN Представление П ON П.IDЗала = З.ID
        LEFT JOIN Билет Б ON Б.IDПредставления = П.ID
   GROUP BY Название, Вместимость
+GO
+
+DROP PROC ОтменаПредставления
+GO
+CREATE PROC ОтменаПредставления
+  @IDПредставления INT
+AS
+DELETE FROM Билет
+  WHERE IDПредставления = @IDПредставления
+DELETE FROM Представление
+  WHERE ID = @IDПредставления
 GO

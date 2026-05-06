@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Literal
-from datetime import date, datetime
 
 from tab import Tab
 from iuform import IUForm
@@ -9,7 +8,7 @@ from menu import Menu
 import config
 from database import db
 from grid import Grid
-from report import Report
+from child_window import ChildWindow
 
 class Window:
     def __init__(self, title, width=900, height=600):
@@ -104,6 +103,32 @@ def __main__():
             continue
         tab = window.new_tab(title)
         window.grids[title] = tab.new_grid(info['query'])
+        def log():
+            query = '''
+                SELECT *
+                FROM БилетLog
+                ORDER BY datelog DESC, ID DESC
+            '''
+            log_window = ChildWindow(window.window, 'Log Билетов')
+            log_window.element.focus()
+            grid = Grid(log_window.element, query, False)
+            grid.frame.pack(padx=10, pady=10, side='top', fill='both', expand=True)
+        if title == 'Билет':
+            tk.Button(window.grids[title].button_frame, text='Log', command=log).pack(side='left', expand=True, anchor='w', padx=20)
+            window.grids[title].button.pack(anchor='e')
+        def delete_performances():
+            grid: Grid = window.grids['Представление']
+            rows = grid.get_selected_rows()
+            if not rows:
+                messagebox.showwarning('Предупреждение', 'Выберите нужные представления!')
+                return
+            for id in rows:
+                db.query(f'EXEC ОтменаПредставления {id}')
+                window.grids['Билет'].update()
+                grid.update()
+        if title == 'Представление':
+            tk.Button(window.grids[title].button_frame, text='Отменить представления', command=delete_performances).pack(side='left', expand=True, anchor='w', padx=20)
+            window.grids[title].button.pack(anchor='e')
     window.start()
 
 if __name__ == '__main__':
