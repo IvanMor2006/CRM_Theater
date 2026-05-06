@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, colorchooser
 from types import SimpleNamespace
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -22,23 +22,17 @@ class Report:
             messagebox.showwarning('Предупреждение', 'Отсутствуют записи!', parent=self.parent)
             return False
         
-        filename = filedialog.asksaveasfilename(
-            defaultextension='.xlsx',
-            filetypes=[('Excel files', '*.xlsx'), ('All files', '*.*')],
-            initialfile=f'{self.title}_{datetime.now().strftime("%Y%m%d%H%M%S")}.xlsx',
-            parent=self.parent
-        )
-
-        if not filename:
-            return False
-        
         try:
             wb = Workbook()
             ws = wb.active
             ws.title = self.title[:31]
 
-            header_font = Font(bold=True, size=11, color='ffffff')
-            header_fill = PatternFill(start_color='366092', end_color='366092', fill_type='solid')
+            header_font_color = colorchooser.askcolor(title='Выберите цвет текста заголовков')[1]
+            header_font = Font(bold=True, size=11, color=header_font_color[1:] if header_font_color else 'ffffff')
+            header_fill_color = colorchooser.askcolor(title='Выберите цвет фона заголовков')[1]
+            if not header_fill_color:
+                header_fill_color = '#366092'
+            header_fill = PatternFill(start_color=header_fill_color[1:], end_color=header_fill_color[1:], fill_type='solid')
             header_alignment = Alignment(horizontal='center', vertical='center')
             border = Border(
                 left=Side(style='thin'),
@@ -81,6 +75,15 @@ class Report:
             ws.print_title_rows = '1:1'
             ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
             
+            filename = filedialog.asksaveasfilename(
+                defaultextension='.xlsx',
+                filetypes=[('Excel files', '*.xlsx'), ('All files', '*.*')],
+                initialfile=f'{self.title}_{datetime.now().strftime("%Y%m%d%H%M%S")}.xlsx',
+                parent=self.parent
+            )
+            if not filename:
+                return False
+
             wb.save(filename)
             messagebox.showinfo('Успех', f'Отчет успешно сохранен в файл:\n{filename}', parent=self.parent)
             return True

@@ -43,6 +43,7 @@ class Menu:
         exporter.export(first_col=True)
     def __report_performances(self):
         report_window = ChildWindow(self.parent.window, 'Выберите дату', '300x200')
+        report_window.element.grab_release()
         tk.Label(report_window.element, text='Год').pack()
         year = ttk.Spinbox(report_window.element, from_=2000, to=datetime.now().year, wrap=True)
         year.pack(pady=5)
