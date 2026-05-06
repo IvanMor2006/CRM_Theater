@@ -28,13 +28,23 @@ class Grid:
         scrollbar_x.config(command=self.element.xview)
         scrollbar_y.config(command=self.element.yview)
 
+        def sort_col(grid: ttk.Treeview, col, reverse):
+            rows = [(grid.set(id, col), id) for id in grid.get_children()]
+            try:
+                rows.sort(key=lambda t: float(t[0]), reverse=reverse)
+            except ValueError:
+                rows.sort(reverse=reverse)
+            for i, (val, id) in enumerate(rows):
+                grid.move(id, '', i)
+            grid.heading(col, command=lambda: sort_col(grid, col, not reverse))
+
         for row in self.rows:
             self.element.insert('', 'end', values=tuple(row))
         for f, c, w in zip(self.FIELDS, COLUMNS, widths):
             n, t = f
             if 'ID' in n:
                 w = 0
-            self.element.heading(c, text=n)
+            self.element.heading(c, text=n, command=lambda _c=c: sort_col(self.element, _c, False))
             self.element.column(c, width=w, stretch=False)
         self.element.pack(expand=True, fill='both')
 
