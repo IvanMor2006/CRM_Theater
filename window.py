@@ -2,10 +2,10 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Literal
 
+import config
 from tab import Tab
 from iuform import IUForm
 from menu import Menu
-import config
 from database import db
 from grid import Grid
 from child_window import ChildWindow
@@ -123,7 +123,7 @@ def __main__():
         def log():
             query = '''
                 SELECT *
-                  FROM БилетLog
+                  FROM БилетыLog
                   ORDER BY datelog DESC, ID DESC
             '''
             log_window = ChildWindow(window.window, 'Log Билетов')
@@ -138,10 +138,10 @@ def __main__():
                     conditions.append("typelog = 'I'")
                 where = f'WHERE {" OR ".join(conditions)}' if conditions else ''
                 log_window.grid.QUERY = f'''
-                    SELECT *
-                      FROM БилетLog
-                      {where}
-                      ORDER BY datelog DESC, ID DESC
+                SELECT *
+                  FROM БилетыLog
+                  {where}
+                  ORDER BY datelog DESC, ID DESC
                 '''
                 if conditions:
                     log_window.grid.update()
@@ -157,6 +157,21 @@ def __main__():
             check_frame.pack()
             log_window.grid = Grid(log_window.element, query, False)
             log_window.grid.frame.pack(padx=10, pady=10, side='top', fill='both', expand=True)
+            def restore():
+                try:
+                    id = log_window.grid.get_selected_rows()[0]
+                    if not db.query(f'''DECLARE @date DATETIME = (SELECT datelog
+                                                            FROM БилетLog
+                                                            WHERE ID = {id})
+                                EXEC ВосстановлениеБилетовДо {id}, @date
+                            '''):
+                        messagebox.showerror('Ошибка', 'Невозможно восстановить билет на несуществующее представление!', parent=log_window.element)
+                    log_window.grid.update()
+                    window.grids['Билет'].update()
+                except:
+                    messagebox.showwarning('Предупреждение', 'Выберите до какой записи восстановить билеты!', parent=log_window.element)
+            tk.Button(log_window.grid.button_frame, text='Восстановить', command=restore).pack(side='left', expand=True, anchor='w', padx=20)
+            log_window.grid.button.pack(anchor='e')
         if title == 'Билет':
             tk.Button(window.grids[title].button_frame, text='Log', command=log).pack(side='left', expand=True, anchor='w', padx=20)
             window.grids[title].button.pack(anchor='e')

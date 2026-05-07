@@ -323,46 +323,6 @@ SELECT П.ID, П.Название, П.Автор, Ж.Название Жанр
        INNER JOIN Жанр Ж ON П.IDЖанра = Ж.ID
 GO
 
-DROP TABLE БилетLog
-GO
-CREATE TABLE БилетLog(
-  ID INT IDENTITY PRIMARY KEY,
-  typelog CHAR NOT NULL,
-  datelog DATETIME NOT NULL,
-  userlog VARCHAR(100),
-  hostlog VARCHAR(100),
-
-  IDБилета INT,
-  Ряд INT,
-  Место INT,
-  Цена MONEY,
-  ДатаПродажи DATETIME,
-  Представление VARCHAR(200)
-)
-GO
-
-CREATE TRIGGER trgБилетI ON Билет
-  AFTER INSERT, UPDATE, DELETE
-AS
-DECLARE @datelog DATETIME = GETDATE()
-INSERT INTO БилетLog(typelog, datelog, userlog, hostlog, IDБилета, Ряд, Место, Цена, ДатаПродажи, Представление)
-  SELECT 'D', @datelog, SYSTEM_USER, HOST_NAME(),
-         NULL, d.Ряд, d.Место, d.Цена, d.ДатаПродажи,
-         CONCAT(FORMAT(П.Дата, 'yyyy-MM-dd HH:mm:ss'), ' - ', С.Название, ' - ', З.Название)
-    FROM deleted d
-         LEFT JOIN Представление П ON d.IDПредставления = П.ID
-         LEFT JOIN Спектакль С ON П.IDСпектакля = С.ID
-         LEFT JOIN Зал З ON П.IDЗала = З.ID
-INSERT INTO БилетLog(typelog, datelog, userlog, hostlog, IDБилета, Ряд, Место, Цена, ДатаПродажи, Представление)
-  SELECT 'I', @datelog, SYSTEM_USER, HOST_NAME(),
-         i.ID, i.Ряд, i.Место, i.Цена, i.ДатаПродажи,
-         CONCAT(FORMAT(П.Дата, 'yyyy-MM-dd HH:mm:ss'), ' - ', С.Название, ' - ', З.Название)
-    FROM inserted i
-         LEFT JOIN Представление П ON i.IDПредставления = П.ID
-         LEFT JOIN Спектакль С ON П.IDСпектакля = С.ID
-         LEFT JOIN Зал З ON П.IDЗала = З.ID
-GO
-
 DROP FUNCTION dbo.ВыручкаПоIDПредставления
 GO
 CREATE FUNCTION dbo.ВыручкаПоIDПредставления(
@@ -445,4 +405,111 @@ DELETE FROM Билет
   WHERE IDПредставления = @IDПредставления
 DELETE FROM Представление
   WHERE ID = @IDПредставления
+GO
+
+DROP TABLE БилетLog
+GO
+CREATE TABLE БилетLog(
+  ID INT IDENTITY PRIMARY KEY,
+  typelog CHAR NOT NULL,
+  datelog DATETIME NOT NULL,
+  userlog VARCHAR(100),
+  hostlog VARCHAR(100),
+
+  IDБилета INT,
+  Ряд INT,
+  Место INT,
+  Цена MONEY,
+  ДатаПродажи DATETIME,
+  IDПредставления INT
+)
+GO
+
+DROP VIEW БилетыLog
+GO
+CREATE VIEW БилетыLog
+AS
+SELECT Б.*, CONCAT(FORMAT(П.Дата, 'yyyy-MM-dd HH:mm:ss'), ' - ', С.Название, ' - ', З.Название) Представление
+  FROM БилетLog Б
+       LEFT JOIN Представление П ON П.ID = Б.IDПредставления
+       LEFT JOIN Спектакль С ON С.ID = П.IDСпектакля
+       LEFT JOIN Зал З ON З.ID = П.IDЗала
+GO
+
+CREATE TRIGGER trgБилетI ON Билет
+  AFTER INSERT, UPDATE, DELETE
+AS
+DECLARE @datelog DATETIME = GETDATE()
+INSERT INTO БилетLog(typelog, datelog, userlog, hostlog, IDБилета, Ряд, Место, Цена, ДатаПродажи, IDПредставления)
+  SELECT 'D', @datelog, SYSTEM_USER, HOST_NAME(),
+         d.ID, d.Ряд, d.Место, d.Цена, d.ДатаПродажи, d.IDПредставления
+    FROM deleted d
+         LEFT JOIN Представление П ON d.IDПредставления = П.ID
+         LEFT JOIN Спектакль С ON П.IDСпектакля = С.ID
+         LEFT JOIN Зал З ON П.IDЗала = З.ID
+INSERT INTO БилетLog(typelog, datelog, userlog, hostlog, IDБилета, Ряд, Место, Цена, ДатаПродажи, IDПредставления)
+  SELECT 'I', @datelog, SYSTEM_USER, HOST_NAME(),
+         i.ID, i.Ряд, i.Место, i.Цена, i.ДатаПродажи, i.IDПредставления
+    FROM inserted i
+         LEFT JOIN Представление П ON i.IDПредставления = П.ID
+         LEFT JOIN Спектакль С ON П.IDСпектакля = С.ID
+         LEFT JOIN Зал З ON П.IDЗала = З.ID
+GO
+
+DROP PROC ВосстановлениеБилетаLog
+GO
+CREATE PROC ВосстановлениеБилетаLog
+  @ID INT
+AS
+DECLARE @typelog CHAR, @IDБилета INT, @Ряд INT, @Место INT, @Цена MONEY, @ДатаПродажи DATETIME, @IDПредставления INT
+SELECT @typelog = typelog, @IDБилета = IDБилета, @Ряд = Ряд, @Место = Место, @Цена = Цена, @ДатаПродажи = ДатаПродажи, @IDПредставления = IDПредставления
+  FROM БилетLog
+  WHERE ID = @ID
+IF EXISTS(SELECT * FROM Представление WHERE ID = @IDПредставления)
+BEGIN
+  EXEC('DISABLE TRIGGER trgБилетI ON Билет')
+  IF @typelog = 'D'
+  BEGIN
+    SET IDENTITY_INSERT Билет ON
+    INSERT INTO Билет(ID, Ряд, Место, Цена, ДатаПродажи, IDПредставления)
+      VALUES (@IDБилета, @Ряд, @Место, @Цена, @ДатаПродажи, @IDПредставления)
+    SET IDENTITY_INSERT Билет OFF
+  END
+  ELSE
+    DELETE FROM Билет
+      WHERE ID = @IDБилета
+  DELETE FROM БилетLog
+    WHERE ID = @ID
+  EXEC('ENABLE TRIGGER trgБилетI ON Билет')
+END
+ELSE
+BEGIN
+  RAISERROR('Невозможно восстановить билет на несуществующее представление!',16,2)
+END
+GO
+
+DROP PROC ВосстановлениеБилетовДо
+GO
+CREATE PROC ВосстановлениеБилетовДо
+  @ID INT,
+  @datelog DATETIME
+AS
+DECLARE @CurID INT
+SELECT ID
+  INTO #LogIDs
+  FROM БилетLog
+  WHERE datelog >= @datelog AND ID >= @ID
+  ORDER BY datelog DESC, ID DESC
+DECLARE КурсорПоБилетамLog CURSOR
+  FOR SELECT ID
+        FROM #LogIDs
+OPEN КурсорПоБилетамLog
+FETCH КурсорПоБилетамLog INTO @CurID
+WHILE @@FETCH_STATUS = 0
+BEGIN
+  EXEC ВосстановлениеБилетаLog @CurID
+  FETCH КурсорПоБилетамLog INTO @CurID
+END
+CLOSE КурсорПоБилетамLog
+DEALLOCATE КурсорПоБилетамLog
 GO

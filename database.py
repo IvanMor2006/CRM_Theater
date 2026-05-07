@@ -18,8 +18,10 @@ class Database:
             if text.strip():
                 db.cursor.execute(text)
                 db.cursor.commit()
+            return True
         except Exception as e:
             print(f'Ошибка: {e}')
+            return False
 
     def insert(self, table, fields, values):
         single = True if len(values) == 1 else False
@@ -35,7 +37,7 @@ class Database:
     def update(self, table, fields, values, id):
         sets = []
         for f, v in zip(fields, values):
-            if isinstance(v, str):
+            if isinstance(v, str) and not v == 'NULL':
                 v = '\'' + v + '\''
             sets.append(f'{f} = {v}')
         query = f'UPDATE {table} SET {", ".join(sets)} WHERE ID = {id}'
