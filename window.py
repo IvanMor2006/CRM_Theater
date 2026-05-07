@@ -99,12 +99,14 @@ class Window:
         id = db.insert(table, fields, values)
         grid = self.grids[table]
         grid.update()
+        self.check_rows()
         grid.select_row_by_id(id)
 
     def __update_callback(self, table, fields, values, id):
         db.update(table, fields, values, id)
         grid = self.grids[table]
         grid.update()
+        self.check_rows()
         grid.select_row_by_id(id)
 
 def __main__():
