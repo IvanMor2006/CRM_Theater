@@ -439,6 +439,14 @@ GO
 CREATE TRIGGER trgБилетI ON Билет
   AFTER INSERT, UPDATE, DELETE
 AS
+IF EXISTS(SELECT * FROM inserted i
+                        INNER JOIN Представление П ON П.ID = i.IDПредставления
+            WHERE i.ДатаПродажи > П.Дата)
+BEGIN
+  RAISERROR('ПродажаБилетаПозжеПредставления',16,2)
+  ROLLBACK TRAN
+  RETURN
+END
 DECLARE @datelog DATETIME = GETDATE()
 INSERT INTO БилетLog(typelog, datelog, userlog, hostlog, IDБилета, Ряд, Место, Цена, ДатаПродажи, IDПредставления)
   SELECT 'D', @datelog, SYSTEM_USER, HOST_NAME(),
