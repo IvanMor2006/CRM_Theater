@@ -121,94 +121,87 @@ def __main__():
 
         tab = window.new_tab(title)
         window.grids[title] = tab.new_grid(info['query'])
-
-        def log():
-            query = '''
-                SELECT *
-                  FROM БилетыLog
-                  ORDER BY datelog DESC, ID DESC
-            '''
-            log_window = ChildWindow(window.window, 'Log Билетов')
-            log_window.element.focus()
-            check_frame = tk.Frame(log_window.element)
-            check_frame.del_val = tk.BooleanVar()
-            def filt():
-                conditions = []
-                if check_frame.del_val.get():
-                    conditions.append("typelog = 'D'")
-                if check_frame.ins_val.get():
-                    conditions.append("typelog = 'I'")
-                where = f'WHERE {" OR ".join(conditions)}' if conditions else ''
-                log_window.grid.QUERY = f'''
-                SELECT *
-                  FROM БилетыLog
-                  {where}
-                  ORDER BY datelog DESC, ID DESC
-                '''
-                if conditions:
-                    log_window.grid.update()
-                else:
-                    log_window.grid.clear()
-            deleted_cb = tk.Checkbutton(check_frame, text='Удалённые', variable=check_frame.del_val, command=filt)
-            deleted_cb.pack(side='left', expand=True)
-            check_frame.del_val.set(True)
-            check_frame.ins_val = tk.BooleanVar()
-            inserted_cb = tk.Checkbutton(check_frame, text='Добавленные', variable=check_frame.ins_val, command=filt)
-            inserted_cb.pack(side='left', expand=True)
-            check_frame.ins_val.set(True)
-            check_frame.pack()
-            log_window.grid = Grid(log_window.element, query, False)
-            log_window.grid.frame.pack(padx=10, pady=10, side='top', fill='both', expand=True)
-            def restore():
-                try:
-                    id = log_window.grid.get_selected_rows()[0]
-                    if not db.query(f'''DECLARE @date DATETIME = (SELECT datelog
-                                                            FROM БилетLog
-                                                            WHERE ID = {id})
-                                EXEC ВосстановлениеБилетовДо {id}, @date
-                            '''):
-                        messagebox.showerror('Ошибка', 'Невозможно восстановить билет на несуществующее представление!', parent=log_window.element)
-                    log_window.grid.update()
-                    window.grids['Билет'].update()
-                except:
-                    messagebox.showwarning('Предупреждение', 'Выберите до какой записи восстановить билеты!', parent=log_window.element)
-            tk.Button(log_window.grid.button_frame, text='Восстановить', command=restore).pack(side='left', expand=True, anchor='w', padx=20)
-            log_window.grid.button.pack(anchor='e')
         if title == 'Билет':
+            def log():
+                query = '''
+                    SELECT *
+                    FROM БилетыLog
+                    ORDER BY datelog DESC, ID DESC
+                '''
+                log_window = ChildWindow(window.window, 'Log Билетов')
+                log_window.element.focus()
+                check_frame = tk.Frame(log_window.element)
+                check_frame.del_val = tk.BooleanVar()
+                def filt():
+                    conditions = []
+                    if check_frame.del_val.get():
+                        conditions.append("typelog = 'D'")
+                    if check_frame.ins_val.get():
+                        conditions.append("typelog = 'I'")
+                    where = f'WHERE {" OR ".join(conditions)}' if conditions else ''
+                    log_window.grid.QUERY = f'''
+                    SELECT *
+                    FROM БилетыLog
+                    {where}
+                    ORDER BY datelog DESC, ID DESC
+                    '''
+                    if conditions:
+                        log_window.grid.update()
+                    else:
+                        log_window.grid.clear()
+                deleted_cb = tk.Checkbutton(check_frame, text='Удалённые', variable=check_frame.del_val, command=filt)
+                deleted_cb.pack(side='left', expand=True)
+                check_frame.del_val.set(True)
+                check_frame.ins_val = tk.BooleanVar()
+                inserted_cb = tk.Checkbutton(check_frame, text='Добавленные', variable=check_frame.ins_val, command=filt)
+                inserted_cb.pack(side='left', expand=True)
+                check_frame.ins_val.set(True)
+                check_frame.pack()
+                log_window.grid = Grid(log_window.element, query, False)
+                log_window.grid.frame.pack(padx=10, pady=10, side='top', fill='both', expand=True)
+                def restore():
+                    try:
+                        id = log_window.grid.get_selected_rows()[0]
+                        if not db.query(f'''DECLARE @date DATETIME = (SELECT datelog FROM БилетLog WHERE ID = {id})
+                                            EXEC ВосстановлениеБилетовДо {id}, @date'''):
+                            messagebox.showerror('Ошибка', 'Невозможно восстановить билет на несуществующее представление!', parent=log_window.element)
+                        log_window.grid.update()
+                        window.grids['Билет'].update()
+                    except:
+                        messagebox.showwarning('Предупреждение', 'Выберите до какой записи восстановить билеты!', parent=log_window.element)
+                tk.Button(log_window.grid.button_frame, text='Восстановить', command=restore).pack(side='left', expand=True, anchor='w', padx=20)
+                log_window.grid.button.pack(anchor='e')
             tk.Button(window.grids[title].button_frame, text='Log', command=log).pack(side='left', expand=True, anchor='w', padx=20)
             window.grids[title].button.pack(anchor='e')
-
-        def delete_performances():
-            grid: Grid = window.grids['Представление']
-            rows = grid.get_selected_rows()
-            if not rows:
-                messagebox.showwarning('Предупреждение', 'Выберите нужные представления!')
-                return
-            for id in rows:
-                db.query(f'EXEC ОтменаПредставления {id}')
-                window.grids['Билет'].update()
-                grid.update()
-            window.check_rows()
         if title == 'Представление':
+            def delete_performances():
+                grid: Grid = window.grids['Представление']
+                rows = grid.get_selected_rows()
+                if not rows:
+                    messagebox.showwarning('Предупреждение', 'Выберите нужные представления!')
+                    return
+                for id in rows:
+                    db.query(f'EXEC ОтменаПредставления {id}')
+                    window.grids['Билет'].update()
+                    grid.update()
+                window.check_rows()
             tk.Button(window.grids[title].button_frame, text='Отменить представления', command=delete_performances).pack(side='left', expand=True, anchor='w', padx=20)
             window.grids[title].button.pack(anchor='e')
 
-        def select_performers():
-            select_window = ChildWindow(window.window, 'Выберите спектакль', '300x75')
-            _, data = db.select('SELECT Название FROM Спектакль')
-            select_play = ttk.Combobox(select_window.element, values=[''] + [row[0] for row in data], width=40, state='readonly')
-            select_play.pack(pady=10)
-            def filt(play):
-                if not play:
-                    play == 'NULL'
-                grid = window.grids['Исполнитель']
-                grid.QUERY = f'''
-                    SELECT * FROM dbo.ИсполнителиСпектакля((SELECT ID FROM Спектакль WHERE Название = '{play}'))
-                '''
-                grid.update()
-                window.check_rows()
-            tk.Button(select_window.element, text='Отфильтровать по спектаклю', command=lambda: filt(select_play.get())).pack()
         if title == 'Исполнитель':
+            def select_performers():
+                select_window = ChildWindow(window.window, 'Выберите спектакль', '300x75')
+                _, data = db.select('SELECT Название FROM Спектакль')
+                select_play = ttk.Combobox(select_window.element, values=[''] + [row[0] for row in data], width=40, state='readonly')
+                select_play.pack(pady=10)
+                def filt(play):
+                    if not play:
+                        play == 'NULL'
+                    grid = window.grids['Исполнитель']
+                    grid.QUERY = f"SELECT * FROM dbo.ИсполнителиСпектакля((SELECT ID FROM Спектакль WHERE Название = '{play}'))"
+                    grid.update()
+                    window.check_rows()
+                tk.Button(select_window.element, text='Отфильтровать по спектаклю', command=lambda: filt(select_play.get())).pack()
             tk.Button(window.grids[title].button_frame, text='Выбрать конкретных исполнителей', command=select_performers).pack(side='left', expand=True, anchor='w', padx=20)
             window.grids[title].button.pack(anchor='e')
     window.start()
